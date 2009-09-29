@@ -1,9 +1,11 @@
-gMini SL
+gMini
 Author: Tamy Boubekeur
+version: 0.9 (september 2009)
 
 This simple program loas its OFF argument file and display it using
 OpenGL 2.0 and simple Phong shader.
 
+This program is free software published under the GNU General Public License (http://www.gnu.org/licenses/gpl.txt).
 
 Compile
 -------
