@@ -35,7 +35,7 @@ void main (void) {
         vec3 n = normalize (gl_NormalMatrix * N);
         vec3 l = normalize (gl_LightSource[i].position.xyz - p);
         float diffuse   = max (dot (l, n), 0.0);
-        vec3 r = reflect (l, n);
+        vec3 r = reflect (-l, n);
         vec3 v = normalize (-p);
         
         float spec = max(dot(r, v), 0.0);
