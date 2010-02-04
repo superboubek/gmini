@@ -85,6 +85,7 @@ static bool fullScreen = false;
 static PhongShader * phongShader;
 
 static Mesh mesh;
+static GLuint glID;
 
 static float diffuseRef = 0.8f;
 static float specRef = 1.5f;
@@ -92,40 +93,6 @@ static float shininess = 16.0f;
 
 typedef enum {Solid, Phong} RenderingMode;
 static RenderingMode mode = Phong;
-
-
-void printUsage () {
-    cerr << endl
-         << "--------------------------------------" << endl
-         << "gMini" << endl 
-         << "--------------------------------------" << endl
-         << "Author : Tamy Boubekeur (http://www.telecom-paristech.fr/~boubek)" << endl
-         << "--------------------------------------" << endl 
-         << "USAGE: ./Main <file>.off" << endl
-         << "--------------------------------------" << endl 
-         << "Keyboard commands" << endl 
-         << "--------------------------------------" << endl 
-         << " ?: Print help" << endl 
-         << " w: Toggle wireframe Mode" << endl 
-         << " g: Toggle Gouraud shading Mode" << endl 
-         << " f: Toggle full screen mode" << endl 
-         << " e: toggle solid mode." << endl
-         << " r: toggle Phong shading mode." << endl
-         << " D/d: Increase/Decrease diffuse reflection" << endl
-         << " S/s: Increase/Decrease specular reflection" << endl
-         << " +/-: Increase/Decrease shininess" << endl 
-         << " <drag>+<left button>: rotate model" << endl 
-         << " <drag>+<right button>: move model" << endl
-         << " <drag>+<middle button>: zoom" << endl
-         << " q, <esc>: Quit" << endl << endl
-         << "--------------------------------------" << endl;
-}
-
-
-void usage () {
-    printUsage ();
-    exit (EXIT_FAILURE);
-}
 
 Mesh openOFF (const std::string filename, unsigned int normWeight) {
      vector<Vertex> V;
@@ -177,15 +144,15 @@ inline void glDrawPoint (const Vertex & v) {
     glDrawPoint (v.getPos (), v.getNormal ()); 
 }
 
-void drawMesh (bool flat) {
-    
+void setShaderValues () {
     phongShader->setDiffuseRef (diffuseRef);
     phongShader->setSpecRef (specRef);
     phongShader->setShininess (shininess);
-    
+}
+
+void drawMesh (bool flat) {
     const vector<Vertex> & V = mesh.getVertices ();
     const vector<Triangle> & T = mesh.getTriangles ();
-
     glBegin (GL_TRIANGLES);
     for (unsigned int i = 0; i < T.size (); i++) {
         const Triangle & t = T[i];
@@ -214,6 +181,7 @@ void drawSolidModel () {
     glPolygonOffset (1.0, 1.0);
     glEnable (GL_POLYGON_OFFSET_FILL);
     glShadeModel (GL_FLAT);
+    phongShader->bind ();
     drawMesh (true);    
     glPolygonMode (GL_FRONT, GL_LINE);
     glPolygonMode (GL_BACK, GL_FILL);
@@ -227,7 +195,9 @@ void drawSolidModel () {
 }
 
 void drawPhongModel () {
-    drawMesh (false);  
+    //    phongShader->bind ();
+    //setShaderValues ();
+    glCallList (glID);
 }
 
 void initLights () {
@@ -299,6 +269,13 @@ void setDefaultMaterial () {
     glDisable (GL_COLOR_MATERIAL);
 }
 
+void initGLList () {
+    glID = glGenLists (1);
+    glNewList (glID, GL_COMPILE);
+    drawMesh (false);
+    glEndList ();
+}
+
 void init (const std::string & filename) {
     glewInit();
     if (glewGetExtension ("GL_ARB_vertex_shader")        != GL_TRUE ||
@@ -319,10 +296,12 @@ void init (const std::string & filename) {
     setSingleSpotLight ();
     setDefaultMaterial ();
     mesh = openOFF (filename, 0);
-   
+    initGLList ();
+    
     try {
         phongShader = new PhongShader;
         phongShader->bind ();
+        setShaderValues ();
     } catch (ShaderException e) {
         cerr << e.getMessage () << endl;
         exit (EXIT_FAILURE);
@@ -331,6 +310,11 @@ void init (const std::string & filename) {
 
 void clear () {
     delete phongShader;
+    glDeleteLists (glID, 1);
+}
+
+void reshape(int w, int h) {
+    camera.resize (w, h);
 }
 
 void display () {
@@ -368,6 +352,32 @@ void idle () {
     glutPostRedisplay ();
 }
 
+void printUsage () {
+    cerr << endl
+         << "--------------------------------------" << endl
+         << "gMini" << endl 
+         << "--------------------------------------" << endl
+         << "Author : Tamy Boubekeur (http://www.telecom-paristech.fr/~boubek)" << endl
+         << "--------------------------------------" << endl 
+         << "USAGE: ./Main <file>.off" << endl
+         << "--------------------------------------" << endl 
+         << "Keyboard commands" << endl 
+         << "--------------------------------------" << endl 
+         << " ?: Print help" << endl 
+         << " w: Toggle wireframe Mode" << endl 
+         << " g: Toggle Gouraud shading Mode" << endl 
+         << " f: Toggle full screen mode" << endl 
+         << " e: toggle solid mode." << endl
+         << " r: toggle Phong shading mode." << endl
+         << " D/d: Increase/Decrease diffuse reflection" << endl
+         << " S/s: Increase/Decrease specular reflection" << endl
+         << " +/-: Increase/Decrease shininess" << endl 
+         << " <drag>+<left button>: rotate model" << endl 
+         << " <drag>+<right button>: move model" << endl
+         << " <drag>+<middle button>: zoom" << endl
+         << " q, <esc>: Quit" << endl << endl
+         << "--------------------------------------" << endl;
+}
 
 void key (unsigned char keyPressed, int x, int y) {
     switch (keyPressed) {
@@ -387,9 +397,11 @@ void key (unsigned char keyPressed, int x, int y) {
         break;
     case 'w':
         glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
+        phongShader->bind ();
         break;
     case 'g':
         glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+        phongShader->bind ();
         break;
     case 'e':
         mode = Solid;
@@ -434,6 +446,7 @@ void key (unsigned char keyPressed, int x, int y) {
         printUsage ();
         break;
     }
+    setShaderValues ();
     idle ();
 }
 
@@ -482,9 +495,12 @@ void motion (int x, int y) {
     }
 }
 
-void reshape(int w, int h) {
-    camera.resize (w, h);
+void usage () {
+    printUsage ();
+    exit (EXIT_FAILURE);
 }
+
+
 
 int main (int argc, char ** argv) {
     glutInit (&argc, argv);

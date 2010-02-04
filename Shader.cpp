@@ -95,13 +95,11 @@ void Shader::loadFromFile (const string & vertexShaderFilename, const string & f
 
 
 void Shader::bind () {
-  glLinkProgram (shaderProgram);
   glUseProgram (shaderProgram);
 }
 
 
 void Shader::unbind () {
-  glLinkProgram (0);
   glUseProgram (0);
 }
 

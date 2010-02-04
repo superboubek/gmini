@@ -10,7 +10,7 @@ LDLIBS = $(LIBS)
 CC = g++
 CPP = g++
 
-CIBLE = Main
+CIBLE = gmini
 SRCS =  Camera.cpp Main.cpp Shader.cpp Vertex.cpp Triangle.cpp Mesh.cpp 
 
 
@@ -18,20 +18,12 @@ OBJS = $(SRCS:.cpp=.o)
 
 
 $(CIBLE): $(OBJS)
-
-install:  $(CIBLE)
-	cp $(CIBLE) $(BINDIR)/
-
-installdirs:
-	test -d $(INCDIR) || mkdir $(INCDIR)
-	test -d $(LIBDIR) || mkdir $(LIBDIR)
-	test -d $(BINDIR) || mkdir $(BINDIR)
-
+	g++ $(LDFLAGS) $(LIBS) -o $(CIBLE) $(OBJS)
 clean:
-	rm -f  *~  $(CIBLE) $(OBJS)
+	rm -f  *~ $(OBJS)
 
 veryclean: clean
-	rm -f $(BINDIR)/$(CIBLE)
+	rm -f $(CIBLE)
 
 dep:
 	gcc $(CPPFLAGS) -MM $(SRCS)
